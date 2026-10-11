@@ -1,0 +1,114 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+
+  /* Aksen utama ala Airbnb: merah-koral hangat untuk tombol dan sorotan */
+  --color-brand-50: #fff1f3;
+  --color-brand-100: #ffe0e5;
+  --color-brand-200: #ffc2cc;
+  --color-brand-500: #ff385c;
+  --color-brand-600: #e31c5f;
+  --color-brand-700: #c1134e;
+
+  /* Netral dengan nada Airbnb: teks #222, sekunder #6a6a6a, garis #ddd */
+  --color-ink: #222222;
+  --color-muted: #6a6a6a;
+  --color-line: #dddddd;
+  --color-soft: #f7f7f7;
+
+  --shadow-card: 0 6px 16px rgb(0 0 0 / 0.12);
+  --shadow-pill: 0 1px 2px rgb(0 0 0 / 0.08), 0 4px 12px rgb(0 0 0 / 0.05);
+  --shadow-float: 0 8px 28px rgb(0 0 0 / 0.28);
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    @apply bg-white font-sans text-ink;
+  }
+  ::selection {
+    @apply bg-brand-100;
+  }
+}
+
+@utility btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg px-5 py-3 text-[15px] font-semibold transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40;
+}
+
+@utility btn-brand {
+  @apply btn bg-linear-to-r from-brand-500 to-brand-600 text-white hover:from-brand-600 hover:to-brand-700;
+}
+
+@utility btn-dark {
+  @apply btn bg-ink text-white hover:bg-black;
+}
+
+@utility btn-outline {
+  @apply btn border border-ink bg-white text-ink hover:bg-soft;
+}
+
+@utility btn-ghost {
+  @apply btn px-3 py-2 underline-offset-2 hover:bg-soft;
+}
+
+@utility field {
+  @apply block w-full rounded-lg border border-line bg-white px-4 py-3 text-[15px] outline-none transition placeholder:text-muted focus:border-ink focus:ring-1 focus:ring-ink aria-invalid:border-brand-600 aria-invalid:ring-brand-600;
+}
+
+@utility label {
+  @apply mb-1.5 block text-sm font-semibold;
+}
+
+@utility card {
+  @apply rounded-2xl border border-line bg-white;
+}
+
+@utility container-page {
+  @apply mx-auto w-full max-w-[1760px] px-4 sm:px-6 md:px-10 xl:px-20;
+}
+
+/* Penanda harga di peta (gaya pin harga Airbnb) */
+.price-pin {
+  background: transparent;
+  border: 0;
+}
+.price-pin span {
+  display: inline-block;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+  border-radius: 9999px;
+  background: #fff;
+  padding: 4px 10px;
+  font: 700 13px 'Plus Jakarta Sans', sans-serif;
+  color: #222;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.08), 0 2px 6px rgb(0 0 0 / 0.18);
+  transition: transform 0.15s;
+}
+.price-pin span:hover,
+.price-pin.active span {
+  background: #222;
+  color: #fff;
+  transform: translate(-50%, -50%) scale(1.08);
+}
+.leaflet-container {
+  font-family: inherit;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+  }
+}
