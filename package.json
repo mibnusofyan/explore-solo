@@ -6,7 +6,8 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "build:preview": "vite build --mode preview --base=./ --outDir dist-preview"
   },
   "dependencies": {
     "leaflet": "^1.9.4",

@@ -27,7 +27,7 @@ export const FACILITIES = [
 ]
 
 const photo = (file, author, license, title) => ({
-  src: `/images/${file}.jpg`,
+  src: `${import.meta.env.BASE_URL}images/${file}.jpg`,
   credit: `${author} · ${license} · Wikimedia Commons`,
   source: `https://commons.wikimedia.org/wiki/File:${encodeURIComponent(title.replace(/ /g, '_'))}`,
 })
