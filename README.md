@@ -1,19 +1,43 @@
-# Explore Solo — Frontend
+# Explore Solo
 
-Frontend aplikasi **Explore Solo**, sistem reservasi destinasi wisata Kota Surakarta, sesuai dokumen SRS versi 1.0 (10 Oktober 2026). Dibangun dengan **React + Tailwind CSS** (SRS Tabel 2.3); tampilannya mengacu pada pola desain Airbnb: bilah pencarian berbentuk pil, tab kategori berikon, kartu foto persegi, galeri mosaik, kartu pemesanan yang menempel di samping, dan pin harga di peta.
+Sistem reservasi destinasi wisata Kota Surakarta, sesuai SRS versi 1.0 (10 Oktober 2026).
 
-Tahap ini **frontend saja**. Seluruh data berasal dari API tiruan di `src/services/api.js` yang disimpan di `localStorage`, sehingga semua alur bisa dicoba tanpa server. Saat backend Express + MySQL siap, cukup ganti isi berkas tersebut dengan pemanggilan `fetch` ke endpoint yang sama (lihat [Kontrak API](#kontrak-api-untuk-backend)).
+| Bagian | Teknologi |
+|---|---|
+| `frontend/` | React 19 + Tailwind CSS 4 (Vite), tampilan mengacu pola desain Airbnb |
+| `backend/` | Express 5, pola MVC (model · controller · route), REST API JSON |
+| Basis data | MySQL 8.0 |
+| Layanan pihak ketiga | Midtrans Snap (pembayaran), Leaflet + OpenStreetMap (peta), SMTP (email) |
 
-## Menjalankan
+## Menjalankan di komputer sendiri
 
-```bash
-npm install
-npm run dev       # http://localhost:5173
-npm run build     # hasil produksi di dist/
-npm run lint
-```
+Butuh **Node.js 22** (minimal 20.19) dan **MySQL 8.0**.
 
-Butuh Node.js 20.19+ atau 22.12+ (syarat Vite 8).
+1. Buat basis data dan pengguna MySQL:
+
+   ```sql
+   CREATE DATABASE explore_solo CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+   CREATE DATABASE explore_solo_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+   CREATE USER 'explore_solo'@'localhost' IDENTIFIED BY 'explore_solo_dev';
+   GRANT ALL PRIVILEGES ON explore_solo.* TO 'explore_solo'@'localhost';
+   GRANT ALL PRIVILEGES ON explore_solo_test.* TO 'explore_solo'@'localhost';
+   ```
+
+2. Pasang dependensi, siapkan konfigurasi, isi data demo:
+
+   ```bash
+   npm run setup                              # install root, backend, frontend
+   cp backend/.env.example backend/.env       # sesuaikan DB_PASSWORD bila berbeda
+   npm run db:reset                           # buat tabel + data demo
+   ```
+
+3. Jalankan backend dan frontend sekaligus:
+
+   ```bash
+   npm run dev
+   ```
+
+   Buka **http://localhost:5173**. API berjalan di http://localhost:4000; Vite meneruskan `/api` dan `/uploads` ke sana, sehingga cookie sesi berada di origin yang sama.
 
 ### Akun demo
 
@@ -21,78 +45,83 @@ Butuh Node.js 20.19+ atau 22.12+ (syarat Vite 8).
 |---|---|---|
 | Wisatawan | `wisatawan@exploresolo.id` | `wisata123` |
 | Pengelola Destinasi | `pengelola@exploresolo.id` | `pengelola123` |
+| Pengelola Destinasi (Mangkunegaran dkk.) | `mangkunegaran@exploresolo.id` | `pengelola123` |
 | Admin | `admin@exploresolo.id` | `admin12345` |
 
-Tombol akun demo juga tersedia di halaman Masuk. Kode booking `ES-HR7K2M` adalah tiket Keraton untuk **hari ini** yang dapat dipakai menguji check-in. Data demo bisa dikembalikan ke kondisi awal lewat tautan **Atur ulang data demo** di footer.
+Kode booking `ES-HR7K2M` adalah tiket Keraton untuk **hari ini** (tanggal seed), untuk mencoba check-in. Jalankan `npm run db:reset` kapan saja untuk mengembalikan data demo; tanggal reservasi dibuat relatif terhadap hari itu.
 
-## Pemetaan fitur SRS
+### Perintah lain
 
-| SRS | Fitur | Halaman / rute |
-|---|---|---|
-| 3.1 | Login (redirect sesuai role, akun nonaktif ditolak) | `/masuk` |
-| 3.2 | Registrasi Wisatawan (validasi email, HP, password ≥ 8, konfirmasi) | `/daftar` |
-| 3.3 | Pencarian: nama/area, kategori, rentang harga, rating, urutan; cek kuota per tanggal | `/` |
-| 3.4 | Detail destinasi: galeri, peta Leaflet/OSM, jam buka, tiket, fasilitas, sisa kuota, ulasan | `/destinasi/:slug` |
-| 3.5 | Reservasi: tanggal, jenis & jumlah tiket, validasi tanggal/kuota, kode booking, kuota ditahan 60 menit | kartu pemesanan → `/pesan/:slug` |
-| 3.6 | Pembayaran (simulasi Midtrans Snap sandbox: VA, QRIS, e-wallet), sukses/gagal/kedaluwarsa | `/pembayaran/:id` |
-| 3.7 | Riwayat reservasi per status, e-tiket QR, unduh PDF, batalkan yang belum dibayar | `/reservasi`, `/reservasi/:id` |
-| 3.8 | Verifikasi tiket: pindai QR kamera (BarcodeDetector) atau input kode | `/pengelola/check-in` |
-| 3.9 | Kelola destinasi (foto, koordinat via peta, fasilitas, jam, hari libur, tiket, kuota) + verifikasi Admin | `/pengelola/destinasi`, `/admin/destinasi` |
-| 3.10 | Reservasi & laporan: filter tanggal/status/destinasi, rekap pengunjung & pendapatan, unduh Excel (CSV) / PDF | `/pengelola/reservasi`, `/admin/laporan` |
-| 3.11 | Rating 1–5 + ulasan ≤ 500 karakter untuk tiket "Sudah Digunakan", sekali per reservasi; balasan pengelola | `/reservasi`, `/pengelola/ulasan` |
-| 3.12 | Profil: nama, HP, foto, ganti password, logout | `/profil` |
-| 3.13 | Kelola pengguna: buat akun Pengelola + tautkan destinasi, ubah, nonaktifkan/aktifkan | `/admin/pengguna` |
+| Perintah | Fungsi |
+|---|---|
+| `npm test` | Uji integrasi API (26 skenario) terhadap database `explore_solo_test` |
+| `npm run lint` | ESLint backend dan frontend |
+| `npm run build` lalu `npm start` | Mode satu server: Express melayani hasil build React di port 4000 |
 
-Ringkasan dasbor tambahan: `/pengelola` dan `/admin`. Halaman bantuan/FAQ (SRS 2.6): `/bantuan`.
+## Pembayaran dan email
+
+- **Tanpa kunci Midtrans** (bawaan pengembangan), halaman pembayaran memakai mode simulasi: pilih metode, lalu "Saya sudah membayar" atau "Simulasikan pembayaran ditolak". Simulasi otomatis mati di produksi.
+- **Dengan Midtrans sandbox**: isi `MIDTRANS_SERVER_KEY` dan `MIDTRANS_CLIENT_KEY` di `backend/.env` (dashboard sandbox → Settings → Access Keys). Halaman pembayaran membuka Snap. Daftarkan Notification URL `https://<domain>/api/payments/midtrans/notification` di dashboard Midtrans; server memverifikasi `signature_key` dan nominal sebelum mengubah status. Bila notifikasi belum sampai (mis. di localhost), status disinkronkan dengan menanyakan Midtrans saat pengguna kembali ke halaman.
+- **Email** verifikasi akun dan e-tiket (dengan lampiran PDF dan QR) dikirim lewat SMTP bila `SMTP_HOST` diisi; tanpa SMTP, isi email dicetak ke konsol backend.
 
 ## Struktur
 
 ```
-src/
-  services/api.js      API tiruan (auth, destinasi, reservasi, ulasan, pengguna)
-  services/db.js       penyimpanan localStorage + reset
-  data/destinations.js 13 destinasi contoh, kategori, fasilitas
-  data/seed.js         pengguna, reservasi, dan ulasan awal (tanggal relatif hari ini)
-  context/             sesi login (AuthContext) dan toast
-  components/          Layout (header/footer), Guards (RBAC + layout dasbor), kartu, peta, UI dasar
-  pages/               halaman publik & wisatawan
-  pages/pengelola/     dasbor Pengelola Destinasi
-  pages/admin/         dasbor Admin
-  pages/shared/        laporan reservasi (dipakai Pengelola dan Admin)
-  lib/                 format Rupiah/tanggal WIB, metode bayar, status, helper
-public/images/         foto destinasi (Wikimedia Commons, diperkecil)
+backend/
+  src/config/          konfigurasi dari variabel lingkungan
+  src/db/              koneksi pool, schema.sql, migrasi, seed data demo
+  src/models/          query SQL per entitas (users, destinations, reservations, reviews)
+  src/controllers/     logika tiap fitur SRS
+  src/routes/          daftar endpoint + middleware role
+  src/middleware/      sesi MySQL, CSRF, RBAC, validasi zod, upload, error
+  src/services/        Midtrans, email, PDF e-tiket, ekspor laporan (PDF/Excel)
+  test/                uji integrasi node:test + supertest
+frontend/
+  src/services/api.js  klien REST (cookie sesi + token CSRF)
+  src/pages/           halaman publik & wisatawan, pengelola/, admin/, shared/
+  src/components/      header, kartu, peta, UI dasar
+  public/images/       foto destinasi (Wikimedia Commons)
 ```
 
-Aturan bisnis yang sudah ditegakkan di API tiruan dan harus diulang di backend: kuota dihitung dari reservasi yang belum dibatalkan; reservasi `MENUNGGU_PEMBAYARAN` kedaluwarsa setelah 60 menit dan kuotanya kembali; check-in hanya untuk tiket `LUNAS`, tanggal kunjungan hari ini, di destinasi milik pengelola tersebut; perubahan data destinasi yang sudah aktif disimpan sebagai `pendingChanges` sampai disetujui Admin. Pemeriksaan role di frontend (`RequireRole`) hanya untuk tampilan; backend tetap wajib memeriksa role di setiap endpoint.
+## Endpoint API
 
-## Kontrak API untuk backend
+| SRS | Endpoint | Akses |
+|---|---|---|
+| 3.1, 3.2 | `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`, `GET /api/auth/csrf`, `GET /api/auth/verify-email` | publik |
+| 3.12 | `PATCH /api/me`, `PUT /api/me/password`, `POST /api/me/avatar` | login |
+| 3.3, 3.4 | `GET /api/destinations?q=&category=&minPrice=&maxPrice=&minRating=&sort=&date=&guests=`, `GET /api/destinations/:slug`, `GET /api/destinations/:slug/availability?date=`, `GET /api/destinations/:id/reviews` | publik |
+| 3.5, 3.7 | `POST /api/reservations`, `GET /api/reservations`, `GET /api/reservations/:id`, `POST /api/reservations/:id/cancel`, `GET /api/reservations/:id/ticket.pdf` | wisatawan |
+| 3.6 | `POST /api/reservations/:id/payment`, `…/payment/simulate`, `…/payment/sync`; webhook `POST /api/payments/midtrans/notification` | wisatawan / Midtrans |
+| 3.8 | `POST /api/manager/check-in` | pengelola |
+| 3.9 | `GET/POST /api/manager/destinations`, `GET/PUT /api/manager/destinations/:id`, `POST /api/manager/uploads/photo`; `GET /api/admin/destinations`, `POST /api/admin/destinations/:id/verify`, `PATCH /api/admin/destinations/:id/status` | pengelola / admin |
+| 3.10 | `GET /api/reports/reservations?from=&to=&status=&destinationId=&format=json\|xlsx\|pdf` | pengelola (destinasinya) / admin |
+| 3.11 | `POST /api/reservations/:id/review`, `GET /api/manager/reviews`, `POST /api/manager/reviews/:id/reply` | wisatawan / pengelola |
+| 3.13 | `GET/POST /api/admin/users`, `PUT /api/admin/users/:id`, `PATCH /api/admin/users/:id/status` | admin |
 
-Usulan endpoint Express yang menggantikan fungsi di `src/services/api.js`:
+Galat dikembalikan sebagai `{ message, fields? }` dengan status 401/403/404/409/410/422.
 
-| Fungsi tiruan | Endpoint |
-|---|---|
-| `auth.login`, `auth.register`, `auth.me` | `POST /api/auth/login`, `POST /api/auth/register`, `GET /api/auth/me` |
-| `auth.updateProfile`, `auth.changePassword` | `PATCH /api/me`, `PUT /api/me/password` |
-| `destinations.search`, `destinations.get` | `GET /api/destinations?q=&category=&minPrice=&maxPrice=&minRating=&sort=`, `GET /api/destinations/:slug` |
-| `destinations.availability` | `GET /api/destinations/:id/availability?date=` |
-| `destinations.listManaged`, `getManaged`, `save` | `GET /api/manager/destinations`, `GET/POST/PUT /api/manager/destinations/:id` |
-| `destinations.listAll`, `verify`, `setActive` | `GET /api/admin/destinations`, `POST /api/admin/destinations/:id/verify`, `PATCH /api/admin/destinations/:id` |
-| `reservations.create`, `get`, `listMine`, `cancel` | `POST /api/reservations`, `GET /api/reservations/:id`, `GET /api/reservations`, `POST /api/reservations/:id/cancel` |
-| `reservations.pay` | `POST /api/reservations/:id/pay` (Snap token) + webhook `POST /api/payments/midtrans/notification` |
-| `reservations.checkIn` | `POST /api/manager/check-in` |
-| `reservations.report` | `GET /api/reports/reservations?from=&to=&status=&destinationId=` (+ `format=pdf|xlsx`) |
-| `reviews.forDestination`, `create`, `forManager`, `reply` | `GET /api/destinations/:id/reviews`, `POST /api/reservations/:id/review`, `GET /api/manager/reviews`, `POST /api/reviews/:id/reply` |
-| `users.list`, `save`, `setActive` | `GET/POST /api/admin/users`, `PUT /api/admin/users/:id`, `PATCH /api/admin/users/:id` |
+## Aturan bisnis dan keamanan
 
-Respons galat sebaiknya berbentuk `{ message, fields }` dengan status HTTP 401/403/404/409/422, sama seperti `ApiError` di frontend.
+- **Kuota**: dihitung dari reservasi yang belum dibatalkan dan belum kedaluwarsa. Pembuatan reservasi mengunci baris destinasi (`SELECT … FOR UPDATE`), sehingga pemesanan bersamaan tidak melampaui kuota (ada ujinya).
+- **Batas bayar 60 menit**: reservasi `MENUNGGU_PEMBAYARAN` dibatalkan otomatis oleh tugas berkala tiap menit dan sebelum kuota dihitung; kuotanya kembali.
+- **Check-in** hanya untuk tiket `LUNAS`, di destinasi milik pengelola tersebut, pada tanggal kunjungan hari ini (WIB), dan hanya sekali.
+- **Perubahan destinasi aktif** disimpan sebagai `pending_changes` sampai disetujui Admin; jenis tiket lama dinonaktifkan, tidak dihapus, agar riwayat reservasi tetap utuh.
+- **Keamanan (SRS 2.5)**: password di-hash bcrypt; sesi di tabel MySQL dengan cookie httpOnly/SameSite (Secure di produksi) dan ID sesi diganti saat login; token CSRF wajib di setiap permintaan yang mengubah data; RBAC di setiap endpoint; akun yang dinonaktifkan langsung kehilangan sesinya; rate limit untuk login/registrasi; header keamanan helmet + CSP; unggahan dibatasi JPG/PNG/WebP dan ukuran.
 
-## Yang masih disimulasikan
+## Deploy
 
-- **Pembayaran**: tombol "Saya sudah membayar" dan "Simulasikan pembayaran ditolak" menggantikan notifikasi Midtrans.
-- **Email** verifikasi dan e-tiket: hanya ditampilkan sebagai pesan.
-- **PDF**: e-tiket dan laporan memakai dialog cetak peramban ("Simpan sebagai PDF"); laporan Excel diunduh sebagai CSV (UTF-8, pemisah `;`).
-- **Data destinasi**: harga, jam buka, dan kuota bersifat ilustratif.
+Jalankan di belakang Nginx dengan HTTPS (cookie sesi bertanda Secure di produksi). Contoh:
 
-## Kredit
+```bash
+npm run build
+NODE_ENV=production SESSION_SECRET=<acak> APP_URL=https://exploresolo.id npm start
+```
 
-Foto destinasi dari Wikimedia Commons dengan lisensi CC0, CC BY, atau CC BY-SA; nama pembuat dan tautan sumber tercantum di halaman `/kredit-foto` dan pada galeri foto setiap destinasi. Peta © kontributor OpenStreetMap. Ikon: Lucide. Huruf: Plus Jakarta Sans.
+Express melayani React dan API dari satu origin. Folder `backend/uploads/` berisi foto unggahan dan perlu dicadangkan.
+
+## Catatan
+
+- SRS Tabel 2.2 menyebut server PHP 8.2, sedangkan Tabel 2.3 memilih Express JS. Implementasi ini memakai Express (Node.js); baris PHP pada Tabel 2.2 sebaiknya diperbarui.
+- Harga, jam buka, dan kuota pada data demo bersifat ilustratif.
+- `npm audit` di backend melaporkan 2 kerentanan tingkat moderate pada `uuid` lama yang dibawa `exceljs`; fungsi yang terdampak (v3/v5/v6 dengan buffer) tidak dipakai di aplikasi ini.
+- Foto destinasi dari Wikimedia Commons (CC0, CC BY, CC BY-SA); pembuat dan sumber tercantum di halaman `/kredit-foto` dan galeri tiap destinasi. Peta © kontributor OpenStreetMap.

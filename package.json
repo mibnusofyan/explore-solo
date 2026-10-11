@@ -1,34 +1,17 @@
 {
   "name": "explore-solo",
-  "version": "0.1.0",
-  "description": "Frontend Explore Solo - sistem reservasi destinasi wisata Kota Surakarta",
+  "private": true,
+  "description": "Explore Solo - sistem reservasi destinasi wisata Kota Surakarta (React + Express + MySQL)",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "lint": "eslint .",
-    "preview": "vite preview",
-    "build:preview": "vite build --mode preview --base=./ --outDir dist-preview"
-  },
-  "dependencies": {
-    "leaflet": "^1.9.4",
-    "lucide-react": "^1.55.0",
-    "qrcode.react": "^4.2.0",
-    "react": "^19.3.0",
-    "react-dom": "^19.3.0",
-    "react-leaflet": "^5.0.0",
-    "react-router-dom": "^7.18.4"
+    "setup": "npm --prefix backend install && npm --prefix frontend install && npm install",
+    "dev": "concurrently -n api,web -c blue,magenta \"npm --prefix backend run dev\" \"npm --prefix frontend run dev\"",
+    "build": "npm --prefix frontend run build",
+    "start": "npm --prefix backend start",
+    "test": "npm --prefix backend test",
+    "lint": "npm --prefix backend run lint && npm --prefix frontend run lint",
+    "db:reset": "npm --prefix backend run db:reset"
   },
   "devDependencies": {
-    "@eslint/js": "^10.0.1",
-    "@tailwindcss/vite": "^4.3.3",
-    "@vitejs/plugin-react": "^6.1.2",
-    "eslint": "^10.12.0",
-    "eslint-plugin-react-hooks": "^7.1.1",
-    "eslint-plugin-react-refresh": "^0.5.7",
-    "globals": "^17.13.0",
-    "tailwindcss": "^4.3.3",
-    "vite": "^8.3.4"
-  },
-  "private": true,
-  "type": "module"
+    "concurrently": "^10.0.6"
+  }
 }
